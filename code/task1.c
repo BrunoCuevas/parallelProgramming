@@ -1,10 +1,18 @@
 #include <stdio.h>
 #include <math.h>
-#define X 10000
-#define T 10000
-static double U[X+1][T+2];
+#include <time.h>
+//#define X 10000
+//#define T 10000
+//static double U[X+1][T+2];
  // declare matrix U
-	int main() {
+	
+int main(int argc, char *argv[]) {
+	int X = atoi(argv[1]);
+	int T = atoi(argv[2]);
+	double **U ;
+	*U = (double *) malloc(sizeof(double)*(X+1)*(T+2));
+	//double U = puntero;
+	int startTime = clock();
 	int t, x;
 	double L= 0.345678, S;
 	// initialize positions of matrix U
@@ -35,14 +43,13 @@ static double U[X+1][T+2];
 	}
 	// obtain checksum of final state
 		// cS : checkSum for a given value
-	float cS;
+	S = 0;
 	for (iX = 0; iX <= X; iX ++){
-		cS = 0;
-		for (tS = 0; tS <= T + 2; tS ++) {
-			cS =+ U[iX][tS];
-		}
-		S =+ cS;
+		
+		S = S + U[iX][T + 2];
 	}
 	printf("CheckSum = %e\n", S);
+	int endTime = clock();
+	printf("Time elapsed = %d\n", endTime - startTime);
 	return 0;
 }
