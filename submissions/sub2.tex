@@ -7,7 +7,7 @@
 \usepackage{graphicx}
 
 \title{Parallel Programming. OpenMP}
-\author{Bruno Cuevas, Albert Cuevas, Iñigo Cuevas}
+\author{Bruno Cuevas, Albert Cuevas, Iñigo Morcillo}
 \date{19th October 2016}
 
 \begin{document}
@@ -21,10 +21,10 @@
 		\item Obtain an answer to the proposed problem (vibration of a string
 		 using finite differences).
 		\item Use dynamical memory allocation.
-		\item Improve the performance of the binary though reducing the ammount
+		\item Improve the performance of the binary through reducing the amount
 		of memory necessary to arrive to the final answer.
 	\end{itemize}
-	In this task, it has been proposed to make a parallel program though the use
+	In this task, it has been proposed to make a parallel program through the use
 	of shared memory paradigm, implemented for C in OpenMP.
 
 \section {Code}
@@ -37,7 +37,7 @@
 
 	Since parallel operations are in 'no wait', then a barrier had to be
 	introduced between the two parallel loops of the section in order to avoid
-	the realocation of elements that haven't been processed yet, which would
+	the realocation of elements that have not been processed yet, which would
 	lead to undeterminism (we could obtain different results in
 	each run) and error.
 
@@ -120,7 +120,6 @@
 \begin{minted}[breaklines]{shell}
 	$ ./e1OMP LENGTH TIME
 \end{minted}
-
 	To compile the code, use:
 \begin{minted}[breaklines]{shell}
 	$ gcc -Wall ejercicioOMP.c -o e1OMP -lm -fopenmp
@@ -143,13 +142,13 @@
 	larger speed) than the not-parallel implementation.
 
 	Since the computer where it has been tested has 4 cores, we would have
-	expected a 4 times speed-up. However, it does only run a 40\% faster.
+	expected a 4 times speed-up. However, it does only run 40\% faster.
 
-	An hypothesis for this speed-up observed is that the process of opening and
-	clossing threads in each time step leads to an important loose of
-	speed. Another source of loose of speed in our implementation is the
+	A hypothesis for this speed-up observed is that the process of opening and
+	clossing threads in each time step leads to an important lose of
+	speed. Another source of lose of speed in our implementation is the
 	reallocation of terms in the matrix. However, it helps us saving memory,
-	so we consider that is not really a loose of efficiency, only of speed.
+	so we consider that it is not actually a loss of efficiency, only of speed.
 
 
 \end{document}
