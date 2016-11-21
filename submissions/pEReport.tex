@@ -1,0 +1,178 @@
+
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{minted}
+\usepackage{color}
+\usepackage[hmarginratio=1:1,top=33mm,columnsep=20pt]{geometry}
+
+\title{Performance Engineering}
+\author{Bruno Cuevas}
+\date{21st Nov 2016}
+
+
+\begin{document}
+
+
+	\maketitle
+\section {Introduction}
+
+	In this report, the final goal is to enhance the performance of a
+	C program. This program uses the Laplace approach to solve a problem
+	through the use of a 5-points gradient.
+
+\section {Modifying loops}
+	
+	One of the keys aspects that must be taken into account is
+	that matrixes in C are stored in a memory which is linear (so
+	data is actually organised by rows that are placed one
+	after each other). Since processors must move through the memory
+	directions to find the data instance they are going to process,
+	the process can get speed up only by changing the way used to
+	access the memory values of the matrix.
+
+	In the original code, the matrix was accessed firstly by columns:
+
+	\begin{minted}[breaklines]{c}
+	float A[n][m];
+	float Anew[n][m];
+	float y[n];
+	...
+	for( i=1; i < m-1; i++ ) for( j=1; j < n-1; j++){
+	  Anew[j][i]=(A[j][i+1]+A[j][i-1]+A[j-1][i]+A[j+1][i])/4;
+	  error=fmaxf(error,sqrtf(fabsf( Anew[j][i]-A[j][i])));
+	
+	}
+	\end{minted}
+
+	A change in the loop order to access firstly by rows was performed:
+
+	\begin{minted}[breaklines]{c}
+	for( j=1; j < n-1; j++) for( i=1; i < m-1; i++ ){
+	  Anew[j][i]=(A[j][i+1]+A[j][i-1]+A[j-1][i]+A[j+1][i])/4;
+	  error=fmaxf(error,sqrtf(fabsf( Anew[j][i]-A[j][i])));	
+        }
+	\end{minted}
+	
+	Although this could seem trivial, the speed up was actually pretty
+	high, as it will be observed in the perf measures section.
+
+		
+\section {Calculation changes}
+
+	Computers perform operations in a different way than us. For instance,
+	they do not perform division as we do but employing a method
+	that only requires the fundamental operations that computers perform.
+	
+	A possible way to speed up the process is using multiplication
+	by 0.25 instead of division by 4 within the Anew[j][i] calculation.
+
+	
+	\begin{minted}[breaklines]{c}
+        for( j=1; j < n-1; j++) for( i=1; i < m-1; i++ ){
+          Anew[j][i] = ( A[j][i+1]+A[j][i-1]+A[j-1][i]+A[j+1][i])*0.25;
+          error=fmaxf(error,sqrt(fabsf( Anew[j][i]-A[j][i])));
+        }
+	\end{minted}
+	
+	Moreover, it can be observed that $\sqrt{\|An_{j,i} - A_{j,i}\|}$
+	is being calculated within the loop. Although we need that
+	the error is root square of the substraction values, it is
+	known that the largest error will also have the highest square root,
+	so it is not necesary to calculate the square root until 
+	flow gets out of the loop.
+
+	\begin{minted}[breaklines]{c}
+        for( j=1; j < n-1; j++) for( i=1; i < m-1; i++ ){
+          Anew[j][i] = ( A[j][i+1]+A[j][i-1]+A[j-1][i]+A[j+1][i])/4;
+          error=fmaxf(error,fabsf( Anew[j][i]-A[j][i]));
+	...
+	error = sqrt(error);
+        }
+	\end{minted}
+	
+\section {Double Buffer}
+
+	Until now, the process has consisted in calculating
+	the values of $An_{i,j}$ from the values of $A_{i,j}$, and
+	then update the $A$ matrix as $A_{i,j}=An_{i,j}$. This process
+	is time consuming since it needs to iterate all over the
+	values of $An$ matrix to update $A$.
+
+	A double buffer can avoid this loop without need to
+	consume more resources. Instead of calculating the values
+	of $An$ and then copy those values to $A$, the program
+	will calculate the values for $A$ or $An$ depending
+	on the iteration number, using the values of the other
+	matrix.
+
+
+	\begin{minted}[breaklines]{c}
+	if(iter % 2 == 0){
+	 for( j=1; j < n-1; j++) for( i=1; i < m-1; i++ ){
+	   Anew[j][i] = ( A[j][i+1]+A[j][i-1]+A[j-1][i]+A[j+1][i])*0.25f;
+	   error = fmaxf( error,  fabsf( Anew[j][i]-A[j][i] )  );
+	 }
+	} else {
+         for( j=1; j < n-1; j++) for( i=1; i < m-1; i++ ){
+	   A[j][i] = ( Anew[j][i+1]+Anew[j][i-1]+Anew[j-1][i]+Anew[j+1][i])*0.25f;
+	   error = fmaxf( error,  fabsf( Anew[j][i]-A[j][i] )  );
+         }
+	}
+	\end{minted}
+
+	As we can see, when the iter value (which is the
+	iteration value) is odd, values will be calculated for $An$ from $A$,
+	and when iter is even, values will be calculated for $A$ from $An$.
+	
+\section {Parallelization through OpenMP}
+
+	By now, the program has been using only one thread of execution. The
+	use of OpenMP libraries can help to enhance the performance through
+	calcuating different $An$ values at the same time. A parallel
+	section was introduced.
+
+	\begin{minted}[breaklines]{c}
+	#pragma omp parallel default(none)\
+	 shared(Anew,A) private(i,j) \
+	reduction(max:error){
+	 #pragma omp for nowait
+	  for( j=1; j < n-1; j++) for( i=1; i < m-1; i++ ){
+	    Anew[j][i] = ( A[j][i+1]+A[j][i-1]+A[j-1][i]+A[j+1][i])*0.25f;
+	    error = fmaxf( error,  fabsf( Anew[j][i]-A[j][i] )  );
+	  }
+	 #pragma omp barrier
+	 #pragma omp for nowait
+	  for( j=1; j < n-1; j++) for( i=1; i < m-1; i++ )
+	    A[j][i] = Anew[j][i];
+	}
+
+	\end{minted}
+
+	There are two aspects that worth attention in this implementation:
+
+	\begin{itemize}
+		\item There is a reduction statement. It allows us
+		to keep the error value updated to the maximum
+		error within the calculation without the need
+		of storing this value inside a vector that
+		should be iterated to find maxima.
+		\item The use of double buffer is depreciated for
+		parallelization.
+	\end{itemize}
+
+\section{Compilation}
+
+	The program can be compiled in different ways: using the default
+	gcc compiler that is included in all normal Linux distros,
+	or the icc compiler, property of Intel Corporation.
+
+	Booth versions will be tested to compare if
+	they produce any enhance of the performance.
+
+\section{Statistics}
+
+\end{document}
+
+
