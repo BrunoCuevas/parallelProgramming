@@ -169,9 +169,91 @@
 	or the icc compiler, property of Intel Corporation.
 
 	Booth versions will be tested to compare if
-	they produce any enhance of the performance.
+	they produce any enhance of the performance, using as code
+	the fastest version.
+
+	As it could be seen later, the enhance might be due to
+	a better usage of the memory. Most of the Miss Cycles depend
+	on the lag of DRAM memory, and those compilers could
+	have internal tools to administrate in a better way memory,
+	so it can move from the DRAM to the processor Caché without
+	having the process waiting.
 
 \section{Statistics}
+
+	\begin{center}
+	\begin{tabular}{||c|c||}
+		\hline
+		Name & Improvements \\
+		\hline
+		Exec1 & None \\
+		Exec2 & Inverted loops. \\
+		Exec3 & Inverted loops, multiplication, square root out \\
+		Exec4 & Double Buffer, inverted loops, multiplication, square root out \\
+		Exec5 & Inverted loops, multiplication, square root out, openMP \\
+		Exec6 & Inverted loops, multiplication, square root out, openMP, 0fast \\
+		Exec7 & Inverted loops, mult, square root out, openMP, icc \\
+		\hline
+	\end{tabular}
+	\end{center}
+
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=\linewidth]{figure1.pdf}
+		\caption {Execution time. Execution was performed in aolin21 at Monday 21st
+		Night. Results for 10 measures. Since variance was extremely
+		low, bar errors were depreciated.}
+		\label{fig:Plot1}
+	\end{figure}
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=\linewidth]{figure2.pdf}
+		\caption {IPC (Intructions per cycle). Measured at the
+		same time that data in figure 1.}
+		\label{fig:Plot2}
+	\end{figure}
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=\linewidth]{figure3.pdf}
+		\caption {Miss Cycles. Measured at the same time that data
+		in figure 2. Value of Exec1 was removed due to its much
+		higher value in relation to all the other measures.}
+		\label{fig:Plot3}
+	\end{figure}
+	
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=\linewidth]{figure4.pdf}
+		\caption {Execution time, IPC and Miss cycles. Booth
+		Exec6 and Exec 7 have been compiled in different
+		compilers, in a smaller grid (512x1024) and for an
+		max iter of 1000.}
+		\label{fig:Plot4}
+	\end{figure}
+
+	
+\section{Conclussion}
+
+	Three conclussions can be made:
+
+	\begin{itemize}
+		\item The use of parallelization tools, the control
+		of the way we access to the memory directions of a matrix
+		and the use of the right tools within the compiler can
+		lead to an speed up of more than 500 times (data not
+		shown).
+		\item However, this speed up doesn't imply a better
+		usage of resources. Double buffer implementation
+		got the highest IPC and the lowest number of Missed
+		Cycles, even if it was slower.
+		\item Finally, the use of the compiler icc, with
+		the option -O3 makes a larger speed up than gcc
+		with the option -Ofast.
+	\end{itemize}
 
 \end{document}
 
